@@ -23,12 +23,7 @@ from pydantic.utils import Representation
 from ...event.message import MessageEvent
 from ..chain import MessageChain
 from ..element import Element
-from .pattern import (
-    ArgumentMatch,
-    ElementMatch,
-    Match,
-    RegexMatch,
-)
+from .pattern import ArgumentMatch, ElementMatch, Match, RegexMatch
 from .util import ElementType, MessageChainType, TwilightParser, split
 
 

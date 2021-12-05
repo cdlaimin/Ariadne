@@ -172,6 +172,14 @@ class ApplicationMiddlewareDispatcher(BaseDispatcher):
         if interface.annotation is Ariadne:
             return self.app
 
+        # FIXME
+        if interface.annotation is interface.event.__class__:
+            return interface.event
+        elif interface.annotation is Broadcast:
+            return interface.broadcast
+        elif interface.annotation is DispatcherInterface:
+            return interface
+
 
 def app_ctx_manager(func: Callable[P, R]) -> Callable[P, R]:
     @functools.wraps(func)
@@ -198,7 +206,7 @@ def wrap_bracket(string: str) -> str:
 T_Callable = TypeVar("T_Callable", bound=Callable)
 
 
-async def await_predicate(predicate: Callable[[], bool], interval: float = 0.05) -> None:
+async def await_predicate(predicate: Callable[[], bool], interval: float = 0.01) -> None:
     while not predicate():
         await asyncio.sleep(interval)
 

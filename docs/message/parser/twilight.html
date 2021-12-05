@@ -51,15 +51,8 @@ from pydantic.utils import Representation
 from ...event.message import MessageEvent
 from ..chain import MessageChain
 from ..element import Element
-from .pattern import (
-    ArgumentMatch,
-    ElementMatch,
-    FullMatch,
-    Match,
-    RegexMatch,
-    WildcardMatch,
-)
-from .util import ArgumentMatchType, TwilightParser, split
+from .pattern import ArgumentMatch, ElementMatch, Match, RegexMatch
+from .util import ElementType, MessageChainType, TwilightParser, split
 
 
 class Sparkle(Representation):
@@ -72,14 +65,14 @@ class Sparkle(Representation):
     @overload
     def __init__(
         self,
-        check_args: Iterable[Union[FullMatch, RegexMatch]] = (),
+        check_args: Iterable[RegexMatch] = (),
         matches: Optional[Dict[str, Match]] = None,
     ):
         ...
 
     def __init__(
         self,
-        check_args: Iterable[Union[FullMatch, RegexMatch]] = (),
+        check_args: Iterable[RegexMatch] = (),
         matches: Optional[Dict[str, Match]] = None,
     ):
         if isinstance(check_args, dict):
@@ -93,9 +86,7 @@ class Sparkle(Representation):
         group_cnt: int = 0
         match_pattern_list: List[str] = []
 
-        self._regex_match_list: List[
-            Tuple[Union[RegexMatch, FullMatch, WildcardMatch, ElementMatch], int, str]
-        ] = []
+        self._regex_match_list: List[Tuple[RegexMatch, int, str]] = []
         self._args_map: Dict[str, Tuple[ArgumentMatch, str]] = {}
         self._parser = TwilightParser(prog=&#34;&#34;, add_help=False)
         for k, v in match_map.items():
@@ -104,16 +95,18 @@ class Sparkle(Representation):
                     self._args_map[v.name] = (v, k)
                     if v.action is ... or self._parser.accept_type(v.action):
                         if &#34;type&#34; not in v.add_arg_data or v.add_arg_data[&#34;type&#34;] is MessageChain:
-                            v.add_arg_data[&#34;type&#34;] = ArgumentMatchType(v, v.regex)
-                        if isinstance(v.add_arg_data[&#34;type&#34;], type) and issubclass(
+                            v.add_arg_data[&#34;type&#34;] = MessageChainType(v, v.regex)
+                        elif isinstance(v.add_arg_data[&#34;type&#34;], type) and issubclass(
                             v.add_arg_data[&#34;type&#34;], Element
                         ):
-                            raise ValueError(&#34;Can&#39;t use Element as argument type!&#34;)
+                            v.add_arg_data[&#34;type&#34;] = ElementType(v, v.add_arg_data[&#34;type&#34;])
                     self._parser.add_argument(*v.pattern, **v.add_arg_data)
-                else:
+                elif isinstance(v, RegexMatch):
                     self._regex_match_list.append((v, group_cnt + 1, k))
                     group_cnt += re.compile(v.gen_regex()).groups
                     match_pattern_list.append(v.gen_regex())
+                else:
+                    raise ValueError(f&#34;{v} is neither RegexMatch nor ArgumentMatch!&#34;)
         if (
             not all(v[0].pattern[0].startswith(&#34;-&#34;) for v in self._args_map.values())
             and self._regex_match_list
@@ -156,7 +149,7 @@ class Sparkle(Representation):
                 match.result = result
                 match.matched = bool(current)
 
-                if isinstance(match, RegexMatch):
+                if match.__class__ is RegexMatch:
                     match.regex_match = re.fullmatch(match.pattern, current)
             return split(string[regex_match.end() :])
         else:
@@ -195,7 +188,7 @@ class Sparkle(Representation):
                     match.result = result
                     match.matched = bool(current)
 
-                    if isinstance(match, RegexMatch):
+                    if match.__class__ is RegexMatch:
                         match.regex_match = re.fullmatch(match.pattern, current)
 
                     if getattr(self, name, None) is None:
@@ -271,7 +264,7 @@ class Twilight(BaseDispatcher, Generic[T_Sparkle]):
             self.sparkle_root = sparkle
         else:
             self.sparkle_root = sparkle()
-        self.map_params = {
+        self._map_params = {
             &#34;remove_source&#34;: remove_source,
             &#34;remove_quote&#34;: remove_quote,
             &#34;remove_extra_space&#34;: remove_extra_space,
@@ -279,7 +272,7 @@ class Twilight(BaseDispatcher, Generic[T_Sparkle]):
 
     def gen_sparkle(self, chain: MessageChain) -&gt; T_Sparkle:
         sparkle = deepcopy(self.sparkle_root)
-        mapping_str, elem_mapping = chain.asMappingString(**self.map_params)
+        mapping_str, elem_mapping = chain.asMappingString(**self._map_params)
         token = ArgumentMatch.elem_mapping_ctx.set(chain)
         try:
             str_list = sparkle.run_check(mapping_str, elem_mapping)
@@ -326,7 +319,7 @@ class Twilight(BaseDispatcher, Generic[T_Sparkle]):
 <dl>
 <dt id="ariadne.message.parser.twilight.Sparkle"><code class="flex name class">
 <span>class <span class="ident">Sparkle</span></span>
-<span>(</span><span>check_args: Iterable[Union[<a title="ariadne.message.parser.pattern.FullMatch" href="pattern.html#ariadne.message.parser.pattern.FullMatch">FullMatch</a>, <a title="ariadne.message.parser.pattern.RegexMatch" href="pattern.html#ariadne.message.parser.pattern.RegexMatch">RegexMatch</a>]] = (), matches: Optional[Dict[str, <a title="ariadne.message.parser.pattern.Match" href="pattern.html#ariadne.message.parser.pattern.Match">Match</a>]] = None)</span>
+<span>(</span><span>check_args: Iterable[<a title="ariadne.message.parser.pattern.RegexMatch" href="pattern.html#ariadne.message.parser.pattern.RegexMatch">RegexMatch</a>] = (), matches: Optional[Dict[str, <a title="ariadne.message.parser.pattern.Match" href="pattern.html#ariadne.message.parser.pattern.Match">Match</a>]] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>Mixin to provide <strong>str</strong>, <strong>repr</strong>, and <strong>pretty</strong> methods. See #884 for more details.</p>
@@ -346,14 +339,14 @@ of objects.</p></div>
     @overload
     def __init__(
         self,
-        check_args: Iterable[Union[FullMatch, RegexMatch]] = (),
+        check_args: Iterable[RegexMatch] = (),
         matches: Optional[Dict[str, Match]] = None,
     ):
         ...
 
     def __init__(
         self,
-        check_args: Iterable[Union[FullMatch, RegexMatch]] = (),
+        check_args: Iterable[RegexMatch] = (),
         matches: Optional[Dict[str, Match]] = None,
     ):
         if isinstance(check_args, dict):
@@ -367,9 +360,7 @@ of objects.</p></div>
         group_cnt: int = 0
         match_pattern_list: List[str] = []
 
-        self._regex_match_list: List[
-            Tuple[Union[RegexMatch, FullMatch, WildcardMatch, ElementMatch], int, str]
-        ] = []
+        self._regex_match_list: List[Tuple[RegexMatch, int, str]] = []
         self._args_map: Dict[str, Tuple[ArgumentMatch, str]] = {}
         self._parser = TwilightParser(prog=&#34;&#34;, add_help=False)
         for k, v in match_map.items():
@@ -378,16 +369,18 @@ of objects.</p></div>
                     self._args_map[v.name] = (v, k)
                     if v.action is ... or self._parser.accept_type(v.action):
                         if &#34;type&#34; not in v.add_arg_data or v.add_arg_data[&#34;type&#34;] is MessageChain:
-                            v.add_arg_data[&#34;type&#34;] = ArgumentMatchType(v, v.regex)
-                        if isinstance(v.add_arg_data[&#34;type&#34;], type) and issubclass(
+                            v.add_arg_data[&#34;type&#34;] = MessageChainType(v, v.regex)
+                        elif isinstance(v.add_arg_data[&#34;type&#34;], type) and issubclass(
                             v.add_arg_data[&#34;type&#34;], Element
                         ):
-                            raise ValueError(&#34;Can&#39;t use Element as argument type!&#34;)
+                            v.add_arg_data[&#34;type&#34;] = ElementType(v, v.add_arg_data[&#34;type&#34;])
                     self._parser.add_argument(*v.pattern, **v.add_arg_data)
-                else:
+                elif isinstance(v, RegexMatch):
                     self._regex_match_list.append((v, group_cnt + 1, k))
                     group_cnt += re.compile(v.gen_regex()).groups
                     match_pattern_list.append(v.gen_regex())
+                else:
+                    raise ValueError(f&#34;{v} is neither RegexMatch nor ArgumentMatch!&#34;)
         if (
             not all(v[0].pattern[0].startswith(&#34;-&#34;) for v in self._args_map.values())
             and self._regex_match_list
@@ -430,7 +423,7 @@ of objects.</p></div>
                 match.result = result
                 match.matched = bool(current)
 
-                if isinstance(match, RegexMatch):
+                if match.__class__ is RegexMatch:
                     match.regex_match = re.fullmatch(match.pattern, current)
             return split(string[regex_match.end() :])
         else:
@@ -469,7 +462,7 @@ of objects.</p></div>
                     match.result = result
                     match.matched = bool(current)
 
-                    if isinstance(match, RegexMatch):
+                    if match.__class__ is RegexMatch:
                         match.regex_match = re.fullmatch(match.pattern, current)
 
                     if getattr(self, name, None) is None:
@@ -584,7 +577,7 @@ of objects.</p></div>
                 match.result = result
                 match.matched = bool(current)
 
-                if isinstance(match, RegexMatch):
+                if match.__class__ is RegexMatch:
                     match.regex_match = re.fullmatch(match.pattern, current)
 
                 if getattr(self, name, None) is None:
@@ -647,7 +640,7 @@ of objects.</p></div>
             match.result = result
             match.matched = bool(current)
 
-            if isinstance(match, RegexMatch):
+            if match.__class__ is RegexMatch:
                 match.regex_match = re.fullmatch(match.pattern, current)
         return split(string[regex_match.end() :])
     else:
@@ -702,7 +695,7 @@ of objects.</p></div>
             self.sparkle_root = sparkle
         else:
             self.sparkle_root = sparkle()
-        self.map_params = {
+        self._map_params = {
             &#34;remove_source&#34;: remove_source,
             &#34;remove_quote&#34;: remove_quote,
             &#34;remove_extra_space&#34;: remove_extra_space,
@@ -710,7 +703,7 @@ of objects.</p></div>
 
     def gen_sparkle(self, chain: MessageChain) -&gt; T_Sparkle:
         sparkle = deepcopy(self.sparkle_root)
-        mapping_str, elem_mapping = chain.asMappingString(**self.map_params)
+        mapping_str, elem_mapping = chain.asMappingString(**self._map_params)
         token = ArgumentMatch.elem_mapping_ctx.set(chain)
         try:
             str_list = sparkle.run_check(mapping_str, elem_mapping)
@@ -823,7 +816,7 @@ of objects.</p></div>
 </summary>
 <pre><code class="python">def gen_sparkle(self, chain: MessageChain) -&gt; T_Sparkle:
     sparkle = deepcopy(self.sparkle_root)
-    mapping_str, elem_mapping = chain.asMappingString(**self.map_params)
+    mapping_str, elem_mapping = chain.asMappingString(**self._map_params)
     token = ArgumentMatch.elem_mapping_ctx.set(chain)
     try:
         str_list = sparkle.run_check(mapping_str, elem_mapping)

@@ -1197,7 +1197,7 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
             self.info[cls] = obj
         return obj
 
-    async def daemon(self, retry_interval: float = 5.0):
+    async def daemon(self, retry_interval: float = 3.0):
         retry_cnt: int = 0
 
         logger.debug("Ariadne daemon started.")
@@ -1207,7 +1207,7 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
                 self.broadcast.postEvent(AdapterLaunched(self))
                 try:
                     await self.adapter.start()
-                    await await_predicate(lambda: self.adapter.session_activated)
+                    await asyncio.wait_for(await_predicate(lambda: self.adapter.session_activated, 0.001), 5)
                     try:
                         async for event in yield_with_timeout(
                             self.adapter.queue.get,
@@ -1227,7 +1227,7 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
                 else:
                     retry_cnt = 0
                 self.broadcast.postEvent(AdapterShutdowned(self))
-                if retry_cnt == self.max_retry:
+                if retry_cnt + 1 >= self.max_retry:
                     logger.critical(f"Max retry exceeded: {self.max_retry}")
                     break
                 if self.status in {AriadneStatus.RUNNING, AriadneStatus.LAUNCH}:
@@ -1255,10 +1255,11 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
                     await t
                 except Exception as e:
                     exceptions.append((e.__class__, e.args))
-        self.adapter.running = False
-        if self.adapter.fetch_task:
-            await self.adapter.fetch_task
-        self.status = AriadneStatus.STOP
+        logger.debug("Ariadne task cleanup completed.")
+        try:
+            await asyncio.wait_for(self.adapter.stop(), 5.0)
+        except TimeoutError:
+            pass
         logger.info("Stopped Ariadne.")
         return exceptions
 
@@ -1288,7 +1289,7 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
             if self.chat_log_cfg.enabled:
                 self.chat_log_cfg.initialize(self)
             self.daemon_task = self.loop.create_task(self.daemon(), name="ariadne_daemon")
-            await await_predicate(lambda: self.adapter.session_activated, 0.0001)
+            await await_predicate(lambda: self.adapter.session_activated, 0.001)
             self.status = AriadneStatus.RUNNING
             self.remote_version = await self.getVersion()
             logger.info(f"Remote version: {self.remote_version}")
