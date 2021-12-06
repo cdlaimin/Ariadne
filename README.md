@@ -6,6 +6,8 @@ _Another elegant framework for mirai and mirai-api-http v2._
 
 > 接受当下, 面向未来.
 
+## 注意, 0.5.0 将会很快发布, 到时请参看 changelog 修改.
+
 </div>
 
 <p align="center">
