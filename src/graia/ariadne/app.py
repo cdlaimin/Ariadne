@@ -1123,8 +1123,13 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
             use_loguru_traceback (bool): 是否注入 loguru 以获得对 traceback.print_exception() 与 sys.excepthook 的完全控制.
             use_bypass_listener (bool): 是否注入 BypassListener 以获得子事件监听支持.
             await_task (bool): 是否等待所有 Executor 任务完成再退出.
+            disable_telemetry (bool): 是否禁用版本记录.
+            disable_logo (bool): 是否禁用 logo 显示.
         """
         if broadcast:
+            loop = broadcast.loop
+        elif isinstance(connect_info, Adapter):
+            broadcast = connect_info.broadcast
             loop = broadcast.loop
         if not loop:
             try:
@@ -1197,7 +1202,7 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
             self.info[cls] = obj
         return obj
 
-    async def daemon(self, retry_interval: float = 3.0):
+    async def daemon(self, retry_interval: float = 5.0):
         retry_cnt: int = 0
 
         logger.debug("Ariadne daemon started.")
@@ -1207,21 +1212,19 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
                 self.broadcast.postEvent(AdapterLaunched(self))
                 try:
                     await self.adapter.start()
-                    await asyncio.wait_for(await_predicate(lambda: self.adapter.session_activated, 0.001), 5)
-                    try:
-                        async for event in yield_with_timeout(
-                            self.adapter.queue.get,
-                            lambda: (
-                                self.adapter.running
-                                and self.status in {AriadneStatus.RUNNING, AriadneStatus.LAUNCH}
-                            ),
-                        ):
-                            with enter_context(self, event):
-                                self.broadcast.postEvent(event)
-                    except CancelledError:
-                        pass
+                    await await_predicate(lambda: self.adapter.session_activated)
+                    async for event in yield_with_timeout(
+                        self.adapter.queue.get,
+                        lambda: (
+                            self.adapter.running
+                            and self.status in {AriadneStatus.RUNNING, AriadneStatus.LAUNCH}
+                        ),
+                    ):
+                        with enter_context(self, event):
+                            self.broadcast.postEvent(event)
                 except Exception as e:
                     logger.exception(e)
+                    await self.adapter.stop()
                 if not self.session_key:
                     retry_cnt += 1
                 else:
@@ -1253,13 +1256,10 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
                     t.cancel()
                 try:
                     await t
-                except Exception as e:
+                except BaseException as e:
                     exceptions.append((e.__class__, e.args))
-        logger.debug("Ariadne task cleanup completed.")
-        try:
-            await asyncio.wait_for(self.adapter.stop(), 5.0)
-        except TimeoutError:
-            pass
+        await self.adapter.stop()
+        self.status = AriadneStatus.STOP
         logger.info("Stopped Ariadne.")
         return exceptions
 
@@ -1289,7 +1289,7 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
             if self.chat_log_cfg.enabled:
                 self.chat_log_cfg.initialize(self)
             self.daemon_task = self.loop.create_task(self.daemon(), name="ariadne_daemon")
-            await await_predicate(lambda: self.adapter.session_activated, 0.001)
+            await await_predicate(lambda: self.adapter.session_activated, 0.0001)
             self.status = AriadneStatus.RUNNING
             self.remote_version = await self.getVersion()
             logger.info(f"Remote version: {self.remote_version}")
@@ -1297,11 +1297,6 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
                 raise RuntimeError(f"You are using an unsupported version: {self.remote_version}!")
             logger.info(f"Application launched with {time.time() - start_time:.2}s")
             self.broadcast.postEvent(ApplicationLaunched(self))
-
-    @deprecated("0.4.8")
-    async def stop(self):
-        logger.warning("Use request_stop() or wait_for_stop() instead!")
-        await self.request_stop()
 
     async def request_stop(self):
         """请求停止 Ariadne."""
@@ -1316,12 +1311,18 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
         if self.status is AriadneStatus.RUNNING:
             await self.request_stop()
             await await_predicate(lambda: self.status is AriadneStatus.STOP)
-        await self.daemon_task
+            await self.daemon_task
 
     async def lifecycle(self):
         await self.launch()
         await self.daemon_task
         await self.wait_for_stop()
+
+    def launch_blocking(self):
+        try:
+            self.loop.run_until_complete(self.lifecycle())
+        except KeyboardInterrupt:
+            self.loop.run_until_complete(self.wait_for_stop())
 
     @app_ctx_manager
     async def getVersion(self, auto_set: bool = True):
