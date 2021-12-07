@@ -436,7 +436,14 @@ class MultimediaElement(Element):
         if sum([bool(url), bool(path), bool(base64)]) > 1:
             raise ValueError("Too many binary initializers!")
         # Web initializer
-        data["id"] = id
+        for key, value in kwargs.items():
+            if key.lower().endswith("id"):
+                data["id"] = value
+
+        if sum([bool(url), bool(path), bool(base64)]) > 1:
+            raise ValueError("Too many binary initializers!")
+        # Web initializer
+        data["id"] = data["id"] if "id" in data else id
         data["url"] = url
         # Binary initializer
         if path:

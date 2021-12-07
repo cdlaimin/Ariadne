@@ -1227,7 +1227,7 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
                 else:
                     retry_cnt = 0
                 self.broadcast.postEvent(AdapterShutdowned(self))
-                if retry_cnt + 1 >= self.max_retry:
+                if retry_cnt == self.max_retry:
                     logger.critical(f"Max retry exceeded: {self.max_retry}")
                     break
                 if self.status in {AriadneStatus.RUNNING, AriadneStatus.LAUNCH}:

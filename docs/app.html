@@ -1255,7 +1255,7 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
                 else:
                     retry_cnt = 0
                 self.broadcast.postEvent(AdapterShutdowned(self))
-                if retry_cnt + 1 &gt;= self.max_retry:
+                if retry_cnt == self.max_retry:
                     logger.critical(f&#34;Max retry exceeded: {self.max_retry}&#34;)
                     break
                 if self.status in {AriadneStatus.RUNNING, AriadneStatus.LAUNCH}:
@@ -1563,7 +1563,7 @@ class Ariadne(MessageMixin, RelationshipMixin, OperationMixin, FileMixin, Multim
                 else:
                     retry_cnt = 0
                 self.broadcast.postEvent(AdapterShutdowned(self))
-                if retry_cnt + 1 &gt;= self.max_retry:
+                if retry_cnt == self.max_retry:
                     logger.critical(f&#34;Max retry exceeded: {self.max_retry}&#34;)
                     break
                 if self.status in {AriadneStatus.RUNNING, AriadneStatus.LAUNCH}:
@@ -1816,7 +1816,7 @@ def account(self) -&gt; Optional[int]:
             else:
                 retry_cnt = 0
             self.broadcast.postEvent(AdapterShutdowned(self))
-            if retry_cnt + 1 &gt;= self.max_retry:
+            if retry_cnt == self.max_retry:
                 logger.critical(f&#34;Max retry exceeded: {self.max_retry}&#34;)
                 break
             if self.status in {AriadneStatus.RUNNING, AriadneStatus.LAUNCH}:
