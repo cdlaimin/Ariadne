@@ -556,7 +556,8 @@
         <span class="sd">&quot;&quot;&quot;撤回特定的消息; 撤回自己的消息需要在发出后 2 分钟内才能成功撤回; 如果在群组内, 需要撤回他人的消息则需要管理员/群主权限.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            target (Union[Source, BotMessage, int]): 特定信息的 `messageId`, 可以是 `Source` 实例, `BotMessage` 实例或者是单纯的 int 整数.</span>
+<span class="sd">            target (Union[Source, BotMessage, int]): 特定信息的 `messageId`,</span>
+<span class="sd">            可以是 `Source` 实例, `BotMessage` 实例或者是单纯的 int 整数.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None: 没有返回.</span>
@@ -864,7 +865,8 @@
 <span class="sd">        请自行判断消息来源是否为群组.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            target (Union[Source, BotMessage, int]): 特定信息的 `messageId`, 可以是 `Source` 实例, `BotMessage` 实例或者是单纯的 int 整数.</span>
+<span class="sd">            target (Union[Source, BotMessage, int]): 特定信息的 `messageId`,</span>
+<span class="sd">            可以是 `Source` 实例, `BotMessage` 实例或者是单纯的 int 整数.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None: 没有返回.</span>
@@ -1058,7 +1060,7 @@
 <span class="sd">            List[FileInfo]: 返回的文件信息列表.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -1097,7 +1099,7 @@
 <span class="sd">            FileInfo: 返回的文件信息.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -1135,7 +1137,7 @@
 <span class="sd">            FileInfo: 新创建文件夹的信息.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -1171,7 +1173,7 @@
 <span class="sd">            None: 没有返回.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -1206,7 +1208,7 @@
 <span class="sd">            None: 没有返回.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -1242,7 +1244,7 @@
 <span class="sd">            None: 没有返回.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -1385,7 +1387,8 @@
 <span class="sd">            connect_info (Union[Adapter, MiraiSession]) 提供与 `mirai-api-http` 交互的信息.</span>
 <span class="sd">            loop (AbstractEventLoop, optional): 事件循环.</span>
 <span class="sd">            broadcast (Broadcast, optional): 被指定的, 外置的事件系统, 即 `Broadcast Control` 实例.</span>
-<span class="sd">            chat_log_config (ChatLogConfig or Literal[False]): 聊天日志的配置, 请移步 `ChatLogConfig` 查看使用方法. 设置为 False 则会完全禁用聊天日志.</span>
+<span class="sd">            chat_log_config (ChatLogConfig or Literal[False]): 聊天日志的配置, 请移步 `ChatLogConfig` 查看使用方法.</span>
+<span class="sd">            设置为 False 则会完全禁用聊天日志.</span>
 <span class="sd">            use_loguru_traceback (bool): 是否注入 loguru 以获得对 traceback.print_exception() 与 sys.excepthook 的完全控制.</span>
 <span class="sd">            use_bypass_listener (bool): 是否注入 BypassListener 以获得子事件监听支持.</span>
 <span class="sd">            await_task (bool): 是否等待所有 Executor 任务完成再退出.</span>
@@ -1543,14 +1546,22 @@
 
             <span class="c1"># Telemetry</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">disable_telemetry</span><span class="p">:</span>
+                <span class="n">official</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">community</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
                 <span class="k">for</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">distributions</span><span class="p">():</span>
                     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;Name&quot;</span><span class="p">]</span>
                     <span class="n">version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">version</span>
-                    <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;graia&quot;</span><span class="p">):</span>
-                        <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>  <span class="c1"># remove graia prefix</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="n">colors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                            <span class="sa">f</span><span class="s2">&quot;&lt;magenta&gt;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/&gt; version: &lt;yellow&gt;</span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">&lt;/&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;graia-&quot;</span><span class="p">):</span>
+                        <span class="n">official</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span><span class="o">.</span><span class="n">title</span><span class="p">(),</span> <span class="n">version</span><span class="p">))</span>
+                    <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;graiax-&quot;</span><span class="p">):</span>
+                        <span class="n">community</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">title</span><span class="p">(),</span> <span class="n">version</span><span class="p">))</span>
+
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span> <span class="ow">in</span> <span class="n">official</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="n">colors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;&lt;magenta&gt;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/&gt; version: &lt;yellow&gt;</span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">&lt;/&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span> <span class="ow">in</span> <span class="n">community</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="n">colors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&lt;cyan&gt;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/&gt; version: &lt;yellow&gt;</span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">&lt;/&gt;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Launching app...&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">broadcast</span><span class="o">.</span><span class="n">dispatcher_interface</span><span class="o">.</span><span class="n">inject_global_raw</span><span class="p">(</span><span class="n">ApplicationMiddlewareDispatcher</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
@@ -1903,7 +1914,8 @@
         <span class="sd">&quot;&quot;&quot;撤回特定的消息; 撤回自己的消息需要在发出后 2 分钟内才能成功撤回; 如果在群组内, 需要撤回他人的消息则需要管理员/群主权限.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            target (Union[Source, BotMessage, int]): 特定信息的 `messageId`, 可以是 `Source` 实例, `BotMessage` 实例或者是单纯的 int 整数.</span>
+<span class="sd">            target (Union[Source, BotMessage, int]): 特定信息的 `messageId`,</span>
+<span class="sd">            可以是 `Source` 实例, `BotMessage` 实例或者是单纯的 int 整数.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None: 没有返回.</span>
@@ -2385,7 +2397,8 @@
         <span class="sd">&quot;&quot;&quot;撤回特定的消息; 撤回自己的消息需要在发出后 2 分钟内才能成功撤回; 如果在群组内, 需要撤回他人的消息则需要管理员/群主权限.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            target (Union[Source, BotMessage, int]): 特定信息的 `messageId`, 可以是 `Source` 实例, `BotMessage` 实例或者是单纯的 int 整数.</span>
+<span class="sd">            target (Union[Source, BotMessage, int]): 特定信息的 `messageId`,</span>
+<span class="sd">            可以是 `Source` 实例, `BotMessage` 实例或者是单纯的 int 整数.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None: 没有返回.</span>
@@ -2409,7 +2422,8 @@
 <h6 id="args">Args</h6>
 
 <ul>
-<li><strong>target (Union[Source, BotMessage, int]):</strong>  特定信息的 <code>messageId</code>, 可以是 <code>Source</code> 实例, <code>BotMessage</code> 实例或者是单纯的 int 整数.</li>
+<li><strong>target (Union[Source, BotMessage, int]):</strong>  特定信息的 <code>messageId</code>,</li>
+<li>可以是 <code>Source</code> 实例, <code>BotMessage</code> 实例或者是单纯的 int 整数.</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -3100,7 +3114,8 @@
 <span class="sd">        请自行判断消息来源是否为群组.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            target (Union[Source, BotMessage, int]): 特定信息的 `messageId`, 可以是 `Source` 实例, `BotMessage` 实例或者是单纯的 int 整数.</span>
+<span class="sd">            target (Union[Source, BotMessage, int]): 特定信息的 `messageId`,</span>
+<span class="sd">            可以是 `Source` 实例, `BotMessage` 实例或者是单纯的 int 整数.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None: 没有返回.</span>
@@ -3715,7 +3730,8 @@
 <span class="sd">        请自行判断消息来源是否为群组.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            target (Union[Source, BotMessage, int]): 特定信息的 `messageId`, 可以是 `Source` 实例, `BotMessage` 实例或者是单纯的 int 整数.</span>
+<span class="sd">            target (Union[Source, BotMessage, int]): 特定信息的 `messageId`,</span>
+<span class="sd">            可以是 `Source` 实例, `BotMessage` 实例或者是单纯的 int 整数.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            None: 没有返回.</span>
@@ -3740,7 +3756,8 @@
 <h6 id="args">Args</h6>
 
 <ul>
-<li><strong>target (Union[Source, BotMessage, int]):</strong>  特定信息的 <code>messageId</code>, 可以是 <code>Source</code> 实例, <code>BotMessage</code> 实例或者是单纯的 int 整数.</li>
+<li><strong>target (Union[Source, BotMessage, int]):</strong>  特定信息的 <code>messageId</code>,</li>
+<li>可以是 <code>Source</code> 实例, <code>BotMessage</code> 实例或者是单纯的 int 整数.</li>
 </ul>
 
 <h6 id="returns">Returns</h6>
@@ -4151,7 +4168,7 @@
 <span class="sd">            List[FileInfo]: 返回的文件信息列表.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -4190,7 +4207,7 @@
 <span class="sd">            FileInfo: 返回的文件信息.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -4228,7 +4245,7 @@
 <span class="sd">            FileInfo: 新创建文件夹的信息.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -4264,7 +4281,7 @@
 <span class="sd">            None: 没有返回.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -4299,7 +4316,7 @@
 <span class="sd">            None: 没有返回.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -4335,7 +4352,7 @@
 <span class="sd">            None: 没有返回.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -4449,7 +4466,7 @@
 <span class="sd">            List[FileInfo]: 返回的文件信息列表.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -4529,7 +4546,7 @@
 <span class="sd">            FileInfo: 返回的文件信息.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -4606,7 +4623,7 @@
 <span class="sd">            FileInfo: 新创建文件夹的信息.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -4680,7 +4697,7 @@
 <span class="sd">            None: 没有返回.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -4753,7 +4770,7 @@
 <span class="sd">            None: 没有返回.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -4828,7 +4845,7 @@
 <span class="sd">            None: 没有返回.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Not implemented for friend&quot;</span><span class="p">)</span>
 
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Friend</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
         <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">Group</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
@@ -5206,7 +5223,8 @@
 <span class="sd">            connect_info (Union[Adapter, MiraiSession]) 提供与 `mirai-api-http` 交互的信息.</span>
 <span class="sd">            loop (AbstractEventLoop, optional): 事件循环.</span>
 <span class="sd">            broadcast (Broadcast, optional): 被指定的, 外置的事件系统, 即 `Broadcast Control` 实例.</span>
-<span class="sd">            chat_log_config (ChatLogConfig or Literal[False]): 聊天日志的配置, 请移步 `ChatLogConfig` 查看使用方法. 设置为 False 则会完全禁用聊天日志.</span>
+<span class="sd">            chat_log_config (ChatLogConfig or Literal[False]): 聊天日志的配置, 请移步 `ChatLogConfig` 查看使用方法.</span>
+<span class="sd">            设置为 False 则会完全禁用聊天日志.</span>
 <span class="sd">            use_loguru_traceback (bool): 是否注入 loguru 以获得对 traceback.print_exception() 与 sys.excepthook 的完全控制.</span>
 <span class="sd">            use_bypass_listener (bool): 是否注入 BypassListener 以获得子事件监听支持.</span>
 <span class="sd">            await_task (bool): 是否等待所有 Executor 任务完成再退出.</span>
@@ -5364,14 +5382,22 @@
 
             <span class="c1"># Telemetry</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">disable_telemetry</span><span class="p">:</span>
+                <span class="n">official</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">community</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
                 <span class="k">for</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">distributions</span><span class="p">():</span>
                     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;Name&quot;</span><span class="p">]</span>
                     <span class="n">version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">version</span>
-                    <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;graia&quot;</span><span class="p">):</span>
-                        <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>  <span class="c1"># remove graia prefix</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="n">colors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                            <span class="sa">f</span><span class="s2">&quot;&lt;magenta&gt;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/&gt; version: &lt;yellow&gt;</span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">&lt;/&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;graia-&quot;</span><span class="p">):</span>
+                        <span class="n">official</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span><span class="o">.</span><span class="n">title</span><span class="p">(),</span> <span class="n">version</span><span class="p">))</span>
+                    <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;graiax-&quot;</span><span class="p">):</span>
+                        <span class="n">community</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">title</span><span class="p">(),</span> <span class="n">version</span><span class="p">))</span>
+
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span> <span class="ow">in</span> <span class="n">official</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="n">colors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;&lt;magenta&gt;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/&gt; version: &lt;yellow&gt;</span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">&lt;/&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span> <span class="ow">in</span> <span class="n">community</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="n">colors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&lt;cyan&gt;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/&gt; version: &lt;yellow&gt;</span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">&lt;/&gt;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Launching app...&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">broadcast</span><span class="o">.</span><span class="n">dispatcher_interface</span><span class="o">.</span><span class="n">inject_global_raw</span><span class="p">(</span><span class="n">ApplicationMiddlewareDispatcher</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
@@ -5496,7 +5522,8 @@
 <span class="sd">            connect_info (Union[Adapter, MiraiSession]) 提供与 `mirai-api-http` 交互的信息.</span>
 <span class="sd">            loop (AbstractEventLoop, optional): 事件循环.</span>
 <span class="sd">            broadcast (Broadcast, optional): 被指定的, 外置的事件系统, 即 `Broadcast Control` 实例.</span>
-<span class="sd">            chat_log_config (ChatLogConfig or Literal[False]): 聊天日志的配置, 请移步 `ChatLogConfig` 查看使用方法. 设置为 False 则会完全禁用聊天日志.</span>
+<span class="sd">            chat_log_config (ChatLogConfig or Literal[False]): 聊天日志的配置, 请移步 `ChatLogConfig` 查看使用方法.</span>
+<span class="sd">            设置为 False 则会完全禁用聊天日志.</span>
 <span class="sd">            use_loguru_traceback (bool): 是否注入 loguru 以获得对 traceback.print_exception() 与 sys.excepthook 的完全控制.</span>
 <span class="sd">            use_bypass_listener (bool): 是否注入 BypassListener 以获得子事件监听支持.</span>
 <span class="sd">            await_task (bool): 是否等待所有 Executor 任务完成再退出.</span>
@@ -5558,7 +5585,8 @@
 <li>connect_info (Union[Adapter, MiraiSession]) 提供与 <code>mirai-api-http</code> 交互的信息.</li>
 <li><strong>loop (AbstractEventLoop, optional):</strong>  事件循环.</li>
 <li><strong>broadcast (Broadcast, optional):</strong>  被指定的, 外置的事件系统, 即 <code>Broadcast Control</code> 实例.</li>
-<li><strong>chat_log_config (ChatLogConfig or Literal[False]):</strong>  聊天日志的配置, 请移步 <code>ChatLogConfig</code> 查看使用方法. 设置为 False 则会完全禁用聊天日志.</li>
+<li><strong>chat_log_config (ChatLogConfig or Literal[False]):</strong>  聊天日志的配置, 请移步 <code>ChatLogConfig</code> 查看使用方法.</li>
+<li>设置为 False 则会完全禁用聊天日志.</li>
 <li><strong>use_loguru_traceback (bool):</strong>  是否注入 loguru 以获得对 traceback.print_exception() 与 sys.excepthook 的完全控制.</li>
 <li><strong>use_bypass_listener (bool):</strong>  是否注入 BypassListener 以获得子事件监听支持.</li>
 <li><strong>await_task (bool):</strong>  是否等待所有 Executor 任务完成再退出.</li>
@@ -5733,14 +5761,22 @@
 
             <span class="c1"># Telemetry</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">disable_telemetry</span><span class="p">:</span>
+                <span class="n">official</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">community</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
                 <span class="k">for</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">distributions</span><span class="p">():</span>
                     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">&quot;Name&quot;</span><span class="p">]</span>
                     <span class="n">version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">version</span>
-                    <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;graia&quot;</span><span class="p">):</span>
-                        <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span><span class="o">.</span><span class="n">title</span><span class="p">()</span>  <span class="c1"># remove graia prefix</span>
-                        <span class="n">logger</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="n">colors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-                            <span class="sa">f</span><span class="s2">&quot;&lt;magenta&gt;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/&gt; version: &lt;yellow&gt;</span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">&lt;/&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
-                        <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;graia-&quot;</span><span class="p">):</span>
+                        <span class="n">official</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">:])</span><span class="o">.</span><span class="n">title</span><span class="p">(),</span> <span class="n">version</span><span class="p">))</span>
+                    <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;graiax-&quot;</span><span class="p">):</span>
+                        <span class="n">community</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">))</span><span class="o">.</span><span class="n">title</span><span class="p">(),</span> <span class="n">version</span><span class="p">))</span>
+
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span> <span class="ow">in</span> <span class="n">official</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="n">colors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;&lt;magenta&gt;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/&gt; version: &lt;yellow&gt;</span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">&lt;/&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">version</span> <span class="ow">in</span> <span class="n">community</span><span class="p">:</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">opt</span><span class="p">(</span><span class="n">colors</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&lt;cyan&gt;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&lt;/&gt; version: &lt;yellow&gt;</span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s2">&lt;/&gt;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Launching app...&quot;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">broadcast</span><span class="o">.</span><span class="n">dispatcher_interface</span><span class="o">.</span><span class="n">inject_global_raw</span><span class="p">(</span><span class="n">ApplicationMiddlewareDispatcher</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
