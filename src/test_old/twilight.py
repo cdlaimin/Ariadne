@@ -1,89 +1,92 @@
 import devtools
+from graia.amnesia.log import install
 
 from graia.ariadne.message.chain import MessageChain
 from graia.ariadne.message.element import *
-
-# from graia.ariadne.message.parser.pattern import *
 from graia.ariadne.message.parser.twilight import *
 
-
-class SparkleTest(Sparkle):
-    arg_a = ArgumentMatch("--foo")
-    arg_b = ArgumentMatch("--bar", action="append", regex=r"\d+")
-    regex_a = RegexMatch(r"\d+")
-    regex_b = RegexMatch(r"\d+")
-    full_non_optional_a = FullMatch("Necessary")
-    full_optional = FullMatch("Universe", optional=True)
-    full_non_optional_b = FullMatch("Neck")
-
-
+install()
 if __name__ == "__main__":
-    twilight = Twilight(SparkleTest)
-    tw_1 = twilight.generate(MessageChain.create("80 80NecessaryNeck"))
-    devtools.debug(tw_1)
-    devtools.debug(twilight.generate(MessageChain.create("80 80NecessaryUniverseNeck --foo hey --bar 00121")))
-    try:
-        devtools.debug(
-            twilight.generate(MessageChain.create("80 80NecessaryUniverseNeck --foo hey --bar nope"))
-        )
-    except Exception as e:
-        devtools.debug(e)
-
     twilight_args_kwargs = Twilight(
-        Sparkle(
-            [FullMatch(".command")],
-            {"param": ArgumentMatch("--option"), "at": ArgumentMatch("at", type=At)},
-        )
+        [
+            FullMatch(".command"),
+            1 @ ArgumentMatch("--option"),
+            ElementMatch(type=At).param(2),
+        ]
     )
 
-    sparkle_kwargs = twilight_args_kwargs.generate(MessageChain.create(".command --option foo ", At(123)))
+    sparkle_kwargs = twilight_args_kwargs.generate(MessageChain(".command --option foo ", At(123)))
+    devtools.debug(sparkle_kwargs)
+
+    twilight_g = Twilight(
+        [
+            FullMatch(".command"),
+            "boolean" @ ArgumentMatch("--option", action="store_true"),
+            ElementMatch(type=At).param("at"),
+        ]
+    )
+
+    sparkle_kwargs = twilight_g.generate(MessageChain(".command --option ", At(123)))
     devtools.debug(sparkle_kwargs)
 
     try:
-        twilight_args_kwargs.generate(MessageChain.create(".coroutine hahaha"))
+        twilight_args_kwargs.generate(MessageChain(".coroutine hahaha"))
     except Exception as e:
         devtools.debug(e)
 
-    sparkle_mixed = Twilight(
-        Sparkle(match={"foo": ArgumentMatch("foo"), "bar": ArgumentMatch("bar")})
-    ).generate(MessageChain.create("test --bar opq"))
-    devtools.debug(sparkle_mixed)
-
-    sparkle_next = Twilight(Sparkle([FullMatch(".command")], match={"foo": ArgumentMatch("foo")})).generate(
-        MessageChain.create(".command opq")
+    sparkle_next = Twilight([FullMatch(".command"), "foo" @ ParamMatch()]).generate(
+        MessageChain(".command opq")
     )
     devtools.debug(sparkle_next)
 
-    twilight_assert = Twilight(Sparkle([RegexMatch(r"(?=.*a)(?=.*b)(?=.*c)(?=.*d)(?=.*e)")]))
+    twilight_assert = Twilight([RegexMatch(r"(?=.*a)(?=.*b)(?=.*c)(?=.*d)(?=.*e)"), WildcardMatch()])
 
-    devtools.debug(twilight_assert.generate(MessageChain.create("abcde")))
+    devtools.debug(twilight_assert.generate(MessageChain("abcde")))
 
-    class FooSparkle(Sparkle, description="Foo description", epilog="Foo epilog"):
-        help = ArgumentMatch("--help", "-h", action="store_true", help="显示本帮助")
-        foo = RegexMatch(".*", help="Foo help!", alt_help="instead")
-
-    twilight = Twilight(FooSparkle([RegexMatch(r"[./!]header")]))
-
-    devtools.debug(twilight.generate(MessageChain(["!header --help hello"])))
-    devtools.debug(twilight.root._parser._actions)
-    print(twilight.root.get_help())
-
-    union_twi = Twilight(Sparkle(check=[UnionMatch(".hello", ".hi")]))
-    devtools.debug(union_twi.generate(MessageChain([".hello"])))
-    devtools.debug(union_twi.generate(MessageChain([".hi"])))
-    try:
-        devtools.debug(union_twi.generate(MessageChain([".help"])))
-    except Exception as e:
-        devtools.debug(e)
-
-    class FooCommand(Sparkle):
-        help = ArgumentMatch("--help", "-h", action="store_true")
-        bar_match = FullMatch("_bar_")
-        regex_match = RegexMatch(r"\d+")
-        wildcard = WildcardMatch()
-
-    k = Twilight(FooCommand([RegexMatch(r"[./!]header")])).generate(
-        MessageChain(["!header _bar_ 123 --help pwq external"])
+    devtools.debug(
+        Twilight(
+            [FullMatch("lp"), FullMatch("user"), FullMatch("perm"), ParamMatch(), ParamMatch()]
+        ).generate(MessageChain('lp user perm "set" "DENIED -> NOLOGIN"'))
     )
 
-    devtools.debug(k)
+    sp = Twilight(
+        [FullMatch("lp"), FullMatch("user"), ParamMatch(), FullMatch("set"), ParamMatch()]
+    ).generate(MessageChain("lp user perm set 'DENIED -> NOLOGIN'"))
+
+    devtools.debug(sp)
+
+    flag_twi = Twilight(
+        [
+            FullMatch(".test").help("匹配 .test"),
+            "op" << ParamMatch().help("操作符"),
+            "help" @ ArgumentMatch("--help", "-h", action="store_true").help("显示该帮助"),
+            "arg" @ WildcardMatch().flags(re.DOTALL),
+            "v" << ArgumentMatch("--verbose", "-v", action="store_true").help("显示详细信息"),
+        ]
+    ).help(".test <op>", "描述", "总结", brief="测试测试!")
+
+    devtools.debug(flag_twi.generate(MessageChain([".test op"])))
+
+    devtools.debug(flag_twi.generate(MessageChain([".test op gl"])))
+
+    flag_sp = flag_twi.generate(MessageChain([".test op\nop\nseq -v"]))
+    devtools.debug(flag_sp.res)
+
+    print(flag_twi.get_help(".test", "描述", "总结"))
+
+    print(
+        Twilight(
+            [
+                FullMatch(".test").help("匹配 .test"),
+                "union" @ UnionMatch("A", "B", "C"),
+                "at" @ ElementMatch(At),
+                "op1" @ ParamMatch(),
+                "op2" @ ParamMatch().help("操作符"),
+                "help" @ ArgumentMatch("--help", "-h", action="store_true").help("显示该帮助"),
+                "arg" @ WildcardMatch().flags(re.DOTALL),
+                "v" @ ArgumentMatch("--verbose", "-v", action="store_true").help("显示详细信息"),
+            ]
+        ).get_help("用法字符串", "描述", "总结")
+    )
+
+    print(TwilightHelpManager.get_help_mgr("global").get_help("全局帮助", prefix_src="description"))

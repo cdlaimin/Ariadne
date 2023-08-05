@@ -91,6 +91,9 @@ ipython_config.py
 #   install all needed dependencies.
 #Pipfile.lock
 
+# pdm
+.pdm.toml
+
 # PEP 582; used by e.g. github.com/David-OConnor/pyflow
 __pypackages__/
 
@@ -130,11 +133,11 @@ dmypy.json
 
 # Temp files / directories
 .temp/
-temp/
+**temp**
 tmp/
 *.tmp
 *.temp
 
-# IDE Directories
-.vscode/
-.idea/
+release-notes.md
+
+.pdm-python
