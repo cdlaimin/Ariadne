@@ -79,7 +79,7 @@ class CertainMember(Certain):
     def __init__(
         self,
         member: SequenceOrInstance[Union[Member, int]],
-        group: Optional[SequenceOrInstance[Union[Member, int]]] = None,
+        group: Optional[SequenceOrInstance[Union[Group, int]]] = None,
     ):
         """
         Args:
