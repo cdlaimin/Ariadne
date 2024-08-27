@@ -1,595 +1,898 @@
+"""Twilight: 混合式消息链处理器"""
 import abc
+import contextlib
+import enum
+import inspect
 import re
-import string
-from argparse import Action
-from copy import copy, deepcopy
+from argparse import Action, HelpFormatter
 from typing import (
     TYPE_CHECKING,
     Any,
+    Awaitable,
     Callable,
+    DefaultDict,
     Dict,
     Generic,
     Iterable,
     List,
+    Literal,
     Optional,
-    Sequence,
     Tuple,
     Type,
     TypedDict,
     TypeVar,
     Union,
+    cast,
+    final,
     overload,
 )
+from typing_extensions import Self
 
-from graia.broadcast.entities.dispatcher import BaseDispatcher
-from graia.broadcast.exceptions import ExecutionStop
-from graia.broadcast.interfaces.dispatcher import DispatcherInterface
 from pydantic.utils import Representation
 
-if TYPE_CHECKING:
-    from ..chain import MessageChain
-    from ..element import Element
+from graia.broadcast.builtin.derive import Derive, DeriveDispatcher
+from graia.broadcast.entities.decorator import Decorator
+from graia.broadcast.entities.dispatcher import BaseDispatcher
+from graia.broadcast.interfaces.decorator import DecoratorInterface
+from graia.broadcast.interfaces.dispatcher import DispatcherInterface
 
-from ...event.message import MessageEvent
+from ...typing import AnnotatedType, Sentinel, T, generic_isinstance, generic_issubclass, get_origin
 from ..chain import MessageChain
+from ..commander.util import Param as ParamToken
+from ..commander.util import Text as TextToken
+from ..commander.util import tokenize
 from ..element import Element
+from .base import ChainDecorator
 from .util import (
     ElementType,
     MessageChainType,
+    TwilightHelpManager,
     TwilightParser,
+    Unmatched,
     elem_mapping_ctx,
-    gen_flags_repr,
     split,
+    transform_regex,
 )
 
-# ------ Match ------
+
+class SpacePolicy(str, enum.Enum):
+    """指示 RegexMatch 的尾随空格策略."""
+
+    value: str
+
+    NOSPACE = ""
+    """禁止尾随空格"""
+
+    PRESERVE = "( )?"
+    """预留尾随空格"""
+
+    FORCE = "( )"
+    """强制尾随空格"""
+
+
+NOSPACE = SpacePolicy.NOSPACE
+PRESERVE = SpacePolicy.PRESERVE
+FORCE = SpacePolicy.FORCE
+
+
+# ANCHOR: Match
 
 
 class Match(abc.ABC, Representation):
-    "匹配器的抽象基类."
-    pattern: str
-    optional: bool
-    help: str
-    matched: Optional[bool]
-    result: Optional["MessageChain"]
+    """匹配项抽象基类"""
 
-    def __init__(self, pattern, optional: bool = False, help: str = "", alt_help: str = "") -> None:
-        self.pattern = pattern
-        self.optional = optional
-        self.help = help
-        self.result = None
-        self.matched = None
-        self.alt_help = alt_help
-        if self.__class__ == Match:
-            raise ValueError("You can't instantiate Match class directly!")
+    dest: Union[int, str]
 
-    def __repr_args__(self):
-        return [
-            ("matched", self.matched),
-            ("result", self.result),
-            ("pattern", self.pattern),
-        ]
+    def __init__(self) -> None:
+        self._help = ""
+        self.dest = ""
 
-    def get_help(self) -> str:
-        return self.pattern.replace("( )?", " ") if not self.alt_help else self.alt_help
+    def help(self, value: str) -> Self:
+        """设置匹配项的帮助信息."""
+        self._help = value
+        return self
+
+    def param(self, target: Union[int, str]) -> Self:
+        """设置匹配项的分派位置."""
+        self.dest = target
+        return self
+
+    def __matmul__(self, other: Union[int, str]) -> Self:
+        return self.param(other)
+
+    def __rmatmul__(self, other: Union[int, str]) -> Self:
+        return self.param(other)
+
+    def __rshift__(self, other: Union[int, str]) -> Self:
+        return self.param(other)
+
+    def __rlshift__(self, other: Union[int, str]) -> Self:
+        return self.param(other)
+
+
+T_Match = TypeVar("T_Match", bound=Match)
+
+
+class MatchResult(Generic[T, T_Match], Representation):
+    """匹配结果"""
+
+    __slots__ = ("matched", "result", "origin")
+
+    matched: bool
+    """是否匹配成功"""
+
+    result: Optional[T]
+    """匹配结果"""
+
+    origin: T_Match
+    """原来的 Match 对象"""
+
+    def __init__(self, matched: bool, origin: T_Match, result: T = None) -> None:
+        """初始化 MatchResult 对象.
+
+        Args:
+            matched (bool): 是否匹配成功
+            origin (T_Match): 原来的 Match 对象
+            result (T, optional): 匹配结果. Defaults to None.
+        """
+        self.matched = matched
+        self.origin = origin
+        self.result = result
+
+
+T_Result = TypeVar("T_Result", bound=MatchResult)
 
 
 class RegexMatch(Match):
-    "基础的正则表达式匹配."
-    regex_match: Optional[re.Match]
-    preserve_space: bool
+    """正则表达式匹配"""
 
-    def __init__(
-        self,
-        pattern: str,
-        *,
-        optional: bool = False,
-        flags: re.RegexFlag = re.RegexFlag(0),
-        preserve_space: bool = True,
-        help: str = "",
-        alt_help: str = "",
-    ) -> None:
-        super().__init__(pattern=pattern, optional=optional, help=help, alt_help=alt_help)
-        self.flags = flags
-        self.flags_repr = gen_flags_repr(self.flags)
-        self.regex_match = None
-        self.preserve_space = preserve_space
+    pattern: str
+    """正则表达式字符串"""
 
-    def gen_regex(self) -> str:
+    def __init__(self, pattern: str = "", optional: bool = False) -> None:
+        """初始化 RegexMatch 对象.
+
+        Args:
+            pattern (str, optional): 正则表达式字符串. Defaults to "".
+            optional (bool, optional): 是否可选. Defaults to False.
+        Returns:
+            None: 无返回.
+        """
+        super().__init__()
+        self.pattern: str = pattern
+        self._flags: re.RegexFlag = re.RegexFlag(0)
+        self.optional: bool = optional
+        self.space_policy: SpacePolicy = SpacePolicy.PRESERVE
+
+    def flags(self, flags: re.RegexFlag) -> Self:
+        """设置正则表达式的标志.
+
+        Args:
+            flags (re.RegexFlag): 正则表达式旗标.
+
+        Returns:
+            Self: RegexMatch 自身.
+        """
+        self._flags = flags
+        return self
+
+    def space(self, space: SpacePolicy) -> Self:
+        """设置正则表达式的尾随空格策略.
+
+        Args:
+            space (SpacePolicy): 尾随空格策略.
+
+        Returns:
+            Self: RegexMatch 自身.
+        """
+        self.space_policy = space
+        return self
+
+    @final
+    @property
+    def _regex_str(self) -> str:
+        """生成 RegexMatch 相应的正则表达式."""
         return (
-            f"({f'?{self.flags_repr}:' if self.flags_repr else ''}{self.pattern})"
-            f"{'?' if self.optional else ''}{'( )?' if self.preserve_space else ''}"
+            f"{transform_regex(self._flags, self._src)}"
+            f"{'?' if self.optional else ''}{self.space_policy.value}"
         )
 
+    @property
+    def _src(self) -> str:
+        """正则表达式的来源"""
+        return self.pattern
 
-class WildcardMatch(RegexMatch):
-    "泛匹配."
+    def __repr_args__(self):
+        return [(None, self.pattern), ("space", self.space_policy.name), ("flags", self._flags)]
 
-    preserve_space: bool
 
-    def __init__(
-        self,
-        *,
-        greed: bool = True,
-        optional: bool = False,
-        preserve_space: bool = True,
-        help: str = "",
-        alt_help: str = "",
-    ) -> None:
-        super().__init__(".*", optional=optional, help=help, preserve_space=preserve_space, alt_help=alt_help)
-        self.greed = greed
-
-    def gen_regex(self) -> str:
-        return f"({self.pattern}{'?' if self.greed else ''}){'?' if self.optional else ''}{'( )?' if self.preserve_space else ''}"
+T_RegexMatch = TypeVar("T_RegexMatch", bound=RegexMatch)
 
 
 class FullMatch(RegexMatch):
-    "全匹配."
+    """全匹配"""
 
-    def __init__(
-        self,
-        pattern: str,
-        *,
-        optional: bool = False,
-        preserve_space: bool = True,
-        help: str = "",
-        alt_help: str = "",
-    ) -> None:
-        super().__init__(
-            pattern, optional=optional, help=help, preserve_space=preserve_space, alt_help=alt_help
-        )
-        self.preserve_space = preserve_space
-
-    def gen_regex(self) -> str:
-        return f"({re.escape(self.pattern)}){'?' if self.optional else ''}{'( )?' if self.preserve_space else ''}"
-
-
-class ElementMatch(RegexMatch):
-    "元素类型匹配."
-
-    pattern: Type["Element"]
-    result: "Element"
-
-    def __init__(
-        self,
-        pattern: Type["Element"],
-        optional: bool = False,
-        preserve_space: bool = True,
-        help: str = "",
-        alt_help: str = "",
-    ) -> None:
-        super().__init__(
-            pattern, optional=optional, help=help, preserve_space=preserve_space, alt_help=alt_help
-        )
-
-    def gen_regex(self) -> str:
-        return (
-            f"(\x02\\d+_{self.pattern.__fields__['type'].default}\x03){'?' if self.optional else ''}"
-            f"{'( )?' if self.preserve_space else ''}"
-        )
-
-    def get_help(self) -> str:
-        return self.pattern.__name__ if not self.alt_help else self.alt_help
+    @property
+    def _src(self) -> str:
+        return re.escape(self.pattern)
 
 
 class UnionMatch(RegexMatch):
-    "多重匹配."
+    """多重匹配"""
 
-    pattern: Tuple[str, ...]
+    pattern: List[str]
+    """匹配的选择项"""
 
     def __init__(
         self,
-        *patterns: str,
+        *pattern: Union[str, Iterable[str]],
         optional: bool = False,
-        preserve_space: bool = True,
-        help: str = "",
-        alt_help: str = "",
     ) -> None:
-        super().__init__(
-            patterns, optional=optional, preserve_space=preserve_space, help=help, alt_help=alt_help
-        )
+        """初始化 UnionMatch 对象.
 
-    def gen_regex(self) -> str:
-        return f"({'|'.join(re.escape(i) for i in self.pattern)})"
+        Args:
+            *pattern (Union[str, Iterable[str]]): 匹配的选择项.
+            optional (bool, optional): 匹配是否可选. Defaults to False.
+        """
+        super().__init__("", optional)
+        self.pattern: List[str] = []
+        for p in pattern:
+            if isinstance(p, str):
+                self.pattern.append(p)
+            else:
+                self.pattern.extend(p)
+        self.optional = optional
+        self.help(f"在 {self.pattern} 中选择一项")
 
-    def get_help(self) -> str:
-        return f"[{'|'.join(self.pattern)}]" if not self.alt_help else self.alt_help
+    @property
+    def _src(self) -> str:
+        return f"{'|'.join(re.escape(i) for i in self.pattern)}"
 
 
-T_const = TypeVar("T_const")
-T_default = TypeVar("T_default")
+class ElementMatch(RegexMatch):
+    """元素类型匹配"""
 
-
-class ArgumentMatch(Match):
-    """参数匹配."""
-
-    pattern: Sequence[str]
-    name: str
-    nargs: Union[str, int]
-    action: Union[str, Type[Action]]
-    const: Optional[T_const]
-    default: Optional[T_default]
-    regex: Optional[re.Pattern]
-    result: Union["MessageChain", Any]
-    add_arg_data: Dict[str, Any]
+    type: Type[Element]
+    """要匹配的元素类型"""
 
     def __init__(
         self,
-        *pattern: str,
-        optional: bool = True,
-        const: Optional[T_const] = ...,
-        default: Optional[T_default] = ...,
-        nargs: Union[str, int] = ...,
-        action: Union[str, Type[Action]] = ...,
-        type: Callable = ...,
-        regex: Optional[str] = None,
-        help: str = "",
+        type: Type[Element] = ...,
+        optional: bool = False,
     ) -> None:
+        """初始化 ElementMatch 对象.
+
+        Args:
+            type (Type[Element]): 元素类型.
+            optional (bool, optional): 匹配是否可选. Defaults to False.
+        """
+        super(RegexMatch, self).__init__()
+        self.type = type
+        self.optional = optional
+        self._flags: re.RegexFlag = re.RegexFlag(0)
+        self.space_policy: SpacePolicy = SpacePolicy.PRESERVE
+        self.help(f"{self.type.__name__} 元素")
+
+    @property
+    def _src(self) -> str:
+        return f"\x02\\d+_{self.type.__fields__['type'].default}\x03"
+
+    def __repr_args__(self):
+        return [(None, self.type), ("space", self.space_policy.name), ("flags", self._flags)]
+
+
+class ParamMatch(RegexMatch):
+    """与 WildcardMatch 类似, 但需要至少一个字符. 且仅匹配用空格分开的一段"""
+
+    def __init__(self, optional: bool = False) -> None:
+        super().__init__(
+            r"""(?:").+?(?:")|(?:').+?(?:')|[^ "']+""",
+            optional,
+        )
+        self._help = "参数"
+
+    def __repr_args__(self):
+        return [(None, "PARAM"), ("space", self.space_policy.name), ("flags", self._flags)]
+
+
+class WildcardMatch(RegexMatch):
+    """泛匹配"""
+
+    def __init__(self, greed: bool = True, optional: bool = False) -> None:
+        """初始化 WildcardMatch 对象.
+
+        Args:
+            greed (bool, optional): 是否贪婪匹配. Defaults to True.
+            optional (bool, optional): 匹配是否可选. Defaults to False.
+        """
+        super().__init__(f".*{'' if greed else'?'}", optional)
+
+
+class ArgumentMatch(Match, Generic[T]):
+    """参数匹配"""
+
+    if TYPE_CHECKING:
+
+        @overload
+        def __init__(  # type: ignore
+            self,
+            *pattern: str,
+            action: Union[str, Type[Action], Literal[Sentinel]] = Sentinel,
+            nargs: Union[int, str, Literal[Sentinel]] = Sentinel,
+            const: Union[T, Literal[Sentinel]] = Sentinel,
+            default: Union[T, Literal[Sentinel]] = Sentinel,
+            type: Union[Callable[[str], T], Literal[Sentinel]] = Sentinel,
+            choices: Union[Iterable[T], Literal[Sentinel]] = Sentinel,
+            optional: bool = True,
+        ):
+            """初始化 ArgumentMatch 对象.
+
+            Args:
+                *pattern (str): 匹配的参数名.
+                action (Union[str, Type[Action]], optional): 参数的动作. Defaults to "store".
+                nargs (Union[int, str], optional): 参数的个数.
+                const (T, optional): 参数的常量值.
+                default (T, optional): 参数的默认值.
+                type (Callable[[str], T], optional): 参数的类型.
+                choices (Iterable[T], optional): 参数的可选值.
+                optional (bool, optional): 参数是否可选. Defaults to True.
+            Returns:
+                None: 无返回
+            """
+            ...
+
+    def __init__(self, *pattern: str, **kwargs) -> None:
+        """初始化 ArgumentMatch 对象.
+
+        Args:
+            *pattern (str): 匹配的参数名.
+            action (Union[str, Type[Action]], optional): 参数的动作. Defaults to "store".
+            nargs (Union[int, str], optional): 参数的个数.
+            const (T, optional): 参数的常量值.
+            default (T, optional): 参数的默认值.
+            type (Callable[[str], T], optional): 参数的类型.
+            choices (Iterable[T], optional): 参数的可选值.
+            optional (bool, optional): 参数是否可选. Defaults to True.
+        Returns:
+            None: 无返回
+        """
+        super().__init__()
         if not pattern:
-            raise ValueError("Expected at least 1 pattern!")
-        super().__init__(pattern, optional, help)
-        self.name = pattern[0].lstrip("-").replace("-", "_")
-        self.nargs = nargs
-        self.action = action
-        self.const = const
-        self.default = default
-        self.regex = re.compile(regex) if regex else None
-        data: Dict[str, Any] = {}
-        if action is not ...:
-            data["action"] = action
-        if nargs is not ...:
-            data["nargs"] = nargs
-        if const is not ...:
-            data["const"] = const
-        if default is not ...:
-            data["default"] = default
-        if type is not ...:
-            data["type"] = type
-        if help is not ...:
-            data["help"] = help
-        if pattern[0].startswith("-"):
-            data["required"] = not optional
-        self.add_arg_data = data
+            raise ValueError("pattern must not be empty")
+        if not all(i.startswith("-") for i in pattern):
+            raise ValueError("pattern must start with '-'")
+        self.pattern: List[str] = list(pattern)
+        self.arg_data: Dict[str, Any] = {"default": Unmatched}
+        for k, v in kwargs.items():
+            if k == "optional":
+                self.arg_data["required"] = not v
+            elif k == "type":
+                if v is MessageChain:
+                    v = MessageChainType()
+                elif isinstance(v, Type) and issubclass(v, Element):
+                    v = ElementType(v)
+                self.arg_data["type"] = v
+            else:
+                self.arg_data[k] = v
+
+        if "type" not in self.arg_data:
+            self.arg_data["type"] = MessageChainType()
+
+    def param(self, target: Union[int, str]) -> Self:
+        """标注分派位置
+
+        Args:
+            target (Union[int, str]): 分派位置
+
+        Returns:
+            Self: 返回自身
+        """
+        self.arg_data["dest"] = target if isinstance(target, str) else f"_#!{target}!#_"
+        super().param(target)
+        return self
+
+    def help(self, value: str) -> Self:
+        """设置帮助值
+
+        Args:
+            value (str): 帮助字符串
+
+        Returns:
+            Self: 返回自身
+        """
+        self.arg_data["help"] = value
+        super().help(value)
+        return self
+
+    def __repr_args__(self):
+        return [(None, self.pattern)]
 
 
-# -------------------
+class ArgResult(Generic[T], MatchResult[T, ArgumentMatch]):
+    """表示 ArgumentMatch 匹配结果"""
+
+    ...
+
+
+class RegexResult(MatchResult[MessageChain, RegexMatch]):
+    """表示 RegexMatch 匹配结果"""
+
+    ...
+
+
+class ElementResult(MatchResult[Element, ElementMatch]):
+    """表示 ElementMatch 匹配结果"""
+
+    ...
+
+
+class ForceResult(MatchResult[T, Match]):
+    """声明匹配结果一定存在/可通过 matched 判别"""
+
+    result: T
+    matched: bool
+    ...
 
 
 class Sparkle(Representation):
-    __dict__: Dict[str, Match]
+    """Sparkle: Twilight 的匹配容器"""
 
-    _description: str = ""
-    _epilog: str = ""
+    __slots__ = ("res",)
+
+    def __init__(self, match_result: Dict[Union[int, str], MatchResult]):
+        self.res = match_result
+
+    @overload
+    def __getitem__(self, item: Union[int, str]) -> MatchResult:
+        ...
+
+    @overload
+    def __getitem__(self, item: Type[int]) -> List[MatchResult]:
+        ...
+
+    @overload
+    def __getitem__(self, item: Type[str]) -> Dict[str, MatchResult]:
+        ...
+
+    def __getitem__(self, item: Union[int, str, Type[int], Type[str]]):
+        if not isinstance(item, type):
+            return self.get(item)
+        if item is int:
+            return [v for k, v in self.res.items() if isinstance(k, int)]
+        elif item is str:
+            return {k: v for k, v in self.res.items() if isinstance(k, str)}
+
+    def get(self, item: Union[int, str]) -> MatchResult:
+        return self.res[item]
 
     def __repr_args__(self):
-        check = [(None, [item[0] for item in self._list_check_match])]
-        return (
-            check
-            + [(k, v) for k, (v, _) in self._mapping_regex_match.items()]
-            + list(self._mapping_arg_match.items())
-        )
-
-    def __getitem__(self, item: Union[str, int]) -> Match:
-        return self.get_match(item)
-
-    def __init_subclass__(cls, /, *, description: str = "", epilog: str = "", **kwargs) -> None:
-        super().__init_subclass__(**kwargs)
-        cls._description = description
-        cls._epilog = epilog
-
-    def __getattribute__(self, __name: str):
-        obj = super().__getattribute__(__name)
-        if not isinstance(obj, Match):
-            return obj
-        else:
-            return self.get_match(__name)
-
-    def get_match(self, item: Union[int, str]):
-        if isinstance(item, int):
-            return self._list_check_match[item][0]
-
-        if item in self._mapping_arg_match:
-            return self._mapping_arg_match[item]
-        elif item in self._mapping_regex_match:
-            return self._mapping_regex_match[item][0]
-        else:
-            raise KeyError(f"Unable to find match named {item}")
-
-    def __deepcopy__(self, memo):
-        copied = copy(self)
-
-        copied._list_check_match = deepcopy(self._list_check_match, memo)
-        copied._mapping_arg_match = deepcopy(self._mapping_arg_match, memo)
-        copied._mapping_regex_match = deepcopy(self._mapping_regex_match, memo)
-        copied._parser_ref = deepcopy(self._parser_ref, memo)
-
-        return copied
-
-    @overload
-    def __init__(self, check: Dict[str, Match]):
-        ...
-
-    @overload
-    def __init__(
-        self,
-        check: Iterable[RegexMatch] = (),
-        match: Optional[Dict[str, Match]] = None,
-    ):
-        ...
-
-    def __init__(
-        self,
-        check: Iterable[RegexMatch] = (),
-        match: Optional[Dict[str, Match]] = None,
-        description: str = "",
-        epilog: str = "",
-    ):
-        self._description = description or self._description
-        self._epilog = epilog or self._epilog
-
-        if isinstance(check, dict):
-            match, check = check, match  # swap
-            check: Iterable[RegexMatch]
-            match: Dict[str, Match]
-
-        if check is ... or not check:
-            check = ()
-        if match is ... or not match:
-            match = {}
-
-        match_map = {k: v for k, v in self.__class__.__dict__.items() if isinstance(v, Match)}
-        match_map.update(match)
-
-        # ----
-        # ordinary matches
-        # ----
-
-        group_cnt: int = 0
-        match_pattern_list: List[str] = []
-
-        self._mapping_regex_match: Dict[str, Tuple[RegexMatch, int]] = {}
-        self._mapping_arg_match: Dict[str, ArgumentMatch] = {}
-        self._parser_ref: Dict[str, ArgumentMatch] = {}
-
-        self._parser = TwilightParser(prog="", add_help=False)
-        for k, v in match_map.items():
-            if k.startswith("_") or k[0] in string.digits:
-                raise ValueError("Invalid Match object name!")
-
-            if isinstance(v, ArgumentMatch):  # add to self._parser
-                self._mapping_arg_match[k] = v
-                self._parser_ref[v.name] = v
-                if v.action is ... or self._parser.accept_type(v.action):
-                    if "type" not in v.add_arg_data or v.add_arg_data["type"] is MessageChain:
-                        v.add_arg_data["type"] = MessageChainType(v.regex)
-                    elif isinstance(v.add_arg_data["type"], type) and issubclass(
-                        v.add_arg_data["type"], Element
-                    ):
-                        v.add_arg_data["type"] = ElementType(v.add_arg_data["type"])
-                self._parser.add_argument(*v.pattern, **v.add_arg_data)
-
-            elif isinstance(v, RegexMatch):  # add to self._mapping_regex_match
-                self._mapping_regex_match[k] = (v, group_cnt + 1)
-                group_cnt += re.compile(v.gen_regex()).groups
-                match_pattern_list.append(v.gen_regex())
-
-            else:
-                raise ValueError(f"{v} is neither RegexMatch nor ArgumentMatch!")
-
-        if (
-            not all(v.pattern[0].startswith("-") for v in self._mapping_arg_match.values())
-            and self._mapping_regex_match
-        ):  # inline validation for underscore
-            raise ValueError("ArgumentMatch's pattern can't start with '-' in this case!")
-
-        self._regex_pattern = "".join(match_pattern_list)
-        self._regex = re.compile(self._regex_pattern)
-
-        # ----
-        # checking matches
-        # ----
-
-        self._list_check_match: List[Tuple[RegexMatch, int]] = []
-
-        group_cnt = 0
-
-        for check_match in check:
-            if not isinstance(check_match, RegexMatch):
-                raise ValueError(f"{check_match} can't be used as checking match!")
-            self._list_check_match.append((check_match, group_cnt + 1))
-            group_cnt += re.compile(check_match.gen_regex()).groups
-        self._check_pattern: str = "".join(check_match.gen_regex() for check_match in check)
-        self._check_regex = re.compile(self._check_pattern)
-
-    # ---
-    # Runtime populate
-    # ---
-
-    def populate_check_match(self, string: str, elem_mapping: Dict[int, Element]) -> List[str]:
-        if not self._check_pattern:
-            return split(string)
-        if regex_match := self._check_regex.match(string):
-            for match, index in self._list_check_match:
-                current = regex_match.group(index) or ""
-                if isinstance(match, ElementMatch):
-                    if current:
-                        index = re.fullmatch("\x02(\\d+)_\\w+\x03", current).group(1)
-                        result = elem_mapping[int(index)]
-                    else:
-                        result = None
-                else:
-                    result = MessageChain.fromMappingString(current, elem_mapping)
-
-                match.result = result
-                match.matched = bool(current)
-
-                if match.__class__ is RegexMatch:
-                    match.regex_match = re.fullmatch(match.pattern, current)
-            return split(string[regex_match.end() :])
-        else:
-            raise ValueError(f"Not matching regex: {self._check_pattern}")
-
-    def populate_arg_match(self, args: List[str]) -> List[str]:
-        if not self._parser_ref:  # Optimization: skip if no ArgumentMatch
-            return args
-        namespace, rest = self._parser.parse_known_args(args)
-        for arg_name, match in self._parser_ref.items():
-            namespace_val = getattr(namespace, arg_name, None)
-            if arg_name in namespace.__dict__:
-                match.result = namespace_val
-                match.matched = bool(namespace_val)
-
-        return rest
-
-    def populate_regex_match(self, elem_mapping: Dict[str, Element], arg_list: List[str]) -> None:
-        if self._regex_pattern:
-            if regex_match := self._regex.fullmatch(" ".join(arg_list)):
-                for _, (match, index) in self._mapping_regex_match.items():
-                    current = regex_match.group(index) or ""
-                    if isinstance(match, ElementMatch):
-                        if current:
-                            index = re.fullmatch("\x02(\\d+)_\\w+\x03", current).group(1)
-                            result = elem_mapping[int(index)]
-                        else:
-                            result = None
-                    else:
-                        result = MessageChain.fromMappingString(current, elem_mapping)
-
-                    match.result = result
-                    match.matched = bool(current)
-
-                    if match.__class__ is RegexMatch:
-                        match.regex_match = re.fullmatch(match.pattern, current)
-
-            else:
-                raise ValueError(f"Regex not matching: {self._regex_pattern}")
-
-    def get_help(self, description: str = "", epilog: str = "", *, header: bool = True) -> str:
-
-        formatter = self._parser._get_formatter()
-
-        description = description or self._description
-        formatter.add_text(description)
-
-        if header:
-            header: List[str] = ["使用方法:"]
-
-            for match, *_ in self._list_check_match:
-                header.append(match.get_help())
-
-            for match, *_ in self._mapping_regex_match.values():
-                header.append(match.get_help())
-
-            formatter.add_usage(None, self._parser._actions, [], prefix=" ".join(header) + " ")
-
-        positional, optional, *_ = self._parser._action_groups
-        formatter.start_section("位置匹配")
-        for name, (match, _) in self._mapping_regex_match.items():
-            formatter.add_text(f"{name} -> 匹配 {match.get_help()}{' : ' + match.help if match.help else ''}")
-        formatter.add_arguments(positional._group_actions)
-        formatter.end_section()
-
-        formatter.start_section("参数匹配")
-        formatter.add_arguments(optional._group_actions)
-        formatter.end_section()
-
-        epilog = epilog or self._epilog
-        formatter.add_text(epilog)
-
-        # determine help from format above
-        return formatter.format_help()
+        return [(repr(k), v) for k, v in self.res.items()]
 
 
 T_Sparkle = TypeVar("T_Sparkle", bound=Sparkle)
 
 
-class _TwilightLocalStorage(TypedDict):
-    result: Optional[Sparkle]
+class TwilightMatcher:
+    """Twilight 匹配器"""
 
+    def __init__(self, *root: Union[Iterable[Match], Match]):
+        self.origin_match_list: List[Match] = []
+        self._parser = TwilightParser(prog="", add_help=False)
+        self._dest_map: Dict[str, ArgumentMatch] = {}
+        self._group_map: Dict[int, RegexMatch] = {}
+        self.dispatch_ref: Dict[Union[int, str], Match] = {}
+        self.match_ref: DefaultDict[Type[Match], List[Match]] = DefaultDict(list)
 
-class Twilight(BaseDispatcher, Generic[T_Sparkle]):
-    """
-    暮光.
-    """
+        regex_str_list: List[str] = []
+        regex_group_cnt: int = 0
 
-    @overload
-    def __init__(self, root: Dict[str, Match], *, map_params: Optional[Dict[str, bool]] = None):
-        """本魔法方法用于初始化本实例.
+        for i in root:
+            if isinstance(i, Match):
+                i = [i]
+            self.origin_match_list.extend(i)
+            for m in i:
+                if isinstance(m, RegexMatch):
+                    self.match_ref[RegexMatch].append(m)
+                    if m.dest:
+                        self._group_map[regex_group_cnt + 1] = m
+                    regex_str_list.append(m._regex_str)
+                    regex_group_cnt += re.compile(m._regex_str).groups
+
+                elif isinstance(m, ArgumentMatch):
+                    self.match_ref[ArgumentMatch].append(m)
+                    if (
+                        "action" in m.arg_data
+                        and "type" in m.arg_data
+                        and not self._parser.accept_type(m.arg_data["action"])
+                    ):
+                        del m.arg_data["type"]
+                    action = self._parser.add_argument(*m.pattern, **m.arg_data)
+                    if m.dest:
+                        self._dest_map[action.dest] = m
+
+                if m.dest:
+                    if m.dest in self.dispatch_ref:
+                        raise NameError(f"duplicate dispatch name: {m.dest}")
+                    self.dispatch_ref[m.dest] = m
+
+        self._regex_pattern: re.Pattern = re.compile("".join(regex_str_list))
+
+    def match(
+        self, arguments: List[str], elem_mapping: Dict[str, Element]
+    ) -> Tuple[Dict[Union[int, str], MatchResult], re.Match]:
+        """匹配参数
+        Args:
+            arguments (List[str]): 参数列表
+            elem_mapping (Dict[str, Element]): 元素映射
+
+        Returns:
+            Dict[Union[int, str], MatchResult]: 匹配结果
+        """
+        result: Dict[Union[int, str], MatchResult] = {}
+        if self._dest_map:
+            namespace, arguments = self._parser.parse_known_args(arguments)
+            nbsp_dict: Dict[str, Any] = namespace.__dict__
+            for k, v in self._dest_map.items():
+                res = nbsp_dict.get(k, Unmatched)
+                result[v.dest] = MatchResult(res is not Unmatched, v, res)
+        if not (total_match := self._regex_pattern.fullmatch(" ".join(arguments))):
+            raise ValueError(f"{' '.join(arguments)} not matching {self._regex_pattern.pattern}")
+        for index, match in self._group_map.items():
+            group: Optional[str] = total_match.group(index)
+            if group is None:
+                res = None
+            else:
+                res = (
+                    elem_mapping[group[1:-1].split("_")[0]]
+                    if isinstance(match, ElementMatch)
+                    else MessageChain._from_mapping_string(group, elem_mapping)
+                )
+
+            if match.dest:
+                if isinstance(match, WildcardMatch):
+                    result[match.dest] = MatchResult(bool(res), match, res)
+                else:
+                    result[match.dest] = MatchResult(group is not None, match, res)
+        return result, total_match
+
+    def get_help(
+        self,
+        usage: str = "",
+        description: str = "",
+        epilog: str = "",
+        dest: bool = True,
+        sep: str = " -> ",
+        formatter_class: Type[HelpFormatter] = HelpFormatter,
+    ) -> str:
+        """利用 Match 中的信息生成帮助字符串.
 
         Args:
-            check (Dict[str, Match]): 匹配的映射.
-            map_params (Dict[str, bool], optional): 向 MessageChain.asMappingString 传入的参数.
+            usage (str, optional): 使用方法 (命令格式).
+            description (str, optional): 前导描述. Defaults to "".
+            epilog (str, optional): 后置总结. Defaults to "".
+            dest (bool, optional): 是否显示分派位置. Defaults to True.
+            sep (str, optional): 分派位置分隔符. Defaults to " -> ".
+            formatter_class (Type[HelpFormatter], optional): 帮助格式化器. Defaults to HelpFormatter.
+
+        Returns:
+            str: 生成的帮助字符串, 被格式化与缩进过了
         """
+        formatter = formatter_class(prog="")
 
-    @overload
-    def __init__(
-        self, root: Union[Type[T_Sparkle], T_Sparkle], *, map_params: Optional[Dict[str, bool]] = None
-    ):
-        """本魔法方法用于初始化本实例.
+        if usage:
+            formatter.add_usage(None, self._parser._actions, [], prefix=f"{usage} ")
 
-        Args:
-            root (Union[Type[Twilight], Twilight], optional): 根 Sparkle 实例, 用于生成新的 Sparkle.
-            map_params (Dict[str, bool], optional): 向 MessageChain.asMappingString 传入的参数.
-        """
+        formatter.add_text(description)
 
-    @overload
+        _, optional, *_ = self._parser._action_groups
+
+        if self.match_ref[RegexMatch]:
+            formatter.start_section("匹配项")
+            for match in self.match_ref[RegexMatch]:
+                if match._help:
+                    formatter.add_text(
+                        f"""{ f"{match.dest}{sep}" if dest and match.dest else ""}{match._help}"""
+                    )
+            formatter.end_section()
+
+        if self.match_ref[ArgumentMatch]:
+            formatter.start_section("可选参数")
+            formatter.add_arguments(optional._group_actions)
+            formatter.end_section()
+
+        formatter.add_text(epilog)
+
+        # determine help from format above
+        return formatter.format_help()
+
+    def __repr__(self) -> str:
+        return f"<Matcher {list(self._group_map.values()) + list(self._dest_map.values())!r}>"  # type: ignore
+
+    def __str__(self) -> str:
+        return repr(list(self._group_map.values()) + list(self._dest_map.values()))  # type: ignore
+
+
+class _TwilightHelpArgs(TypedDict):
+    usage: str
+    description: str
+    epilog: str
+    dest: bool
+    sep: str
+    formatter_class: Type[HelpFormatter]
+
+
+class Twilight(Generic[T_Sparkle], BaseDispatcher):
+    """暮光"""
+
+    preprocessor: Union[ChainDecorator, AnnotatedType, None] = None
+
     def __init__(
         self,
-        root: Iterable[RegexMatch],
-        match: Dict[str, Match] = ...,
-        *,
-        map_params: Optional[Dict[str, bool]] = None,
-    ):
+        *root: Union[Iterable[Match], Match],
+        map_param: Optional[Dict[str, bool]] = None,
+        preprocessor: Union[ChainDecorator, AnnotatedType, None, Literal[Sentinel]] = Sentinel,
+    ) -> None:
         """本魔法方法用于初始化本实例.
 
         Args:
-            check (Iterable[RegexMatch]): 用于检查的 Match 对象.
-            match (Dict[str, Match]): 额外匹配的映射.
-            map_params (Dict[str, bool], optional): 向 MessageChain.asMappingString 传入的参数.
+            *root (Iterable[Match] | Match): 匹配规则.
+            map_param (Dict[str, bool], optional): 控制 MessageChain 转化的参数.
+            preprocessor (ChainDecorator, optional): 消息链预处理器. \
+            应该来自 `graia.ariadne.message.parser.base` 模块. Defaults to None.
         """
+        self.map_param = map_param or {}
+        if preprocessor is not Sentinel:
+            self.preprocessor = preprocessor
+        self.help_data: Optional[_TwilightHelpArgs] = None
+        self.help_id: str = TwilightHelpManager.AUTO_ID
+        self.help_brief: str = TwilightHelpManager.AUTO_ID
+        self.matcher: TwilightMatcher = TwilightMatcher(*root)
 
-    def __init__(self, root=..., match=..., *, map_params: Optional[Dict[str, bool]] = None):
-        "Actual implementation of __init__"
-        if isinstance(root, Sparkle):
-            self.root = root
-        elif isinstance(root, type) and issubclass(root, Sparkle):
-            self.root = root()
-        else:
-            self.root = Sparkle(check=root, match=match)
+    def __repr__(self) -> str:
+        return f"<Twilight: {self.matcher}>"
 
-        self._map_params = map_params or {}
+    def generate(self, chain: MessageChain, storage: Optional[Dict[str, Any]] = None) -> T_Sparkle:
+        """从消息链生成 Sparkle 实例.
 
-    def generate(self, chain: MessageChain) -> T_Sparkle:
-        sparkle = deepcopy(self.root)
-        mapping_str, elem_mapping = chain.asMappingString(**self._map_params)
-        token = elem_mapping_ctx.set(chain)
-        try:
-            str_list = sparkle.populate_check_match(mapping_str, elem_mapping)
-            arg_list = sparkle.populate_arg_match(str_list)
-            sparkle.populate_regex_match(elem_mapping, arg_list)
-        except Exception:
-            raise
+        Args:
+            chain (MessageChain): 传入的消息链.
+
+        Returns:
+            T_Sparkle: 生成的 Sparkle 对象.
+        """
+        mapping_str, elem_mapping = chain._to_mapping_str(**self.map_param)
+        token = elem_mapping_ctx.set(elem_mapping)
+        arguments: List[str] = split(mapping_str, keep_quote=True)
+        res, match = self.matcher.match(arguments, elem_mapping)
+        if storage:
+            storage["__parser_regex_match_obj__"] = match
+            storage["__parser_regex_match_map__"] = elem_mapping
         elem_mapping_ctx.reset(token)
-        return sparkle
+        return cast(T_Sparkle, Sparkle(res))
 
-    def beforeExecution(self, interface: "DispatcherInterface[MessageEvent]"):
-        if not isinstance(interface.event, MessageEvent):
-            raise ExecutionStop
-        local_storage: _TwilightLocalStorage = interface.execution_contexts[-1].local_storage
-        chain: MessageChain = interface.event.messageChain
-        try:
-            local_storage["result"] = self.generate(chain)
-        except:
-            raise ExecutionStop
+    @classmethod
+    def from_command(  # ANCHOR: Sparkle: From command
+        cls,
+        command: str,
+        extra_args: Optional[List[Match]] = None,
+    ) -> "Twilight":
+        """从 shell 式命令生成 Twilight.
 
-    async def catch(
-        self, interface: "DispatcherInterface[MessageEvent]"
-    ) -> Optional[Union["Twilight", T_Sparkle, Match]]:
-        local_storage: _TwilightLocalStorage = interface.execution_contexts[-1].local_storage
-        sparkle = local_storage["result"]
-        if issubclass(interface.annotation, Sparkle):
+        Args:
+            command (str): 命令, 使用 {param} 或 {0} 的形式创建参数占位符. \
+                使用 [a|b] 创建选择匹配. 使用 反斜杠 转义.
+
+            extra_args (List[Match], optional): 可选的额外 Match 列表.
+
+        Returns:
+            Twilight: 生成的 Twilight.
+        """
+        extra_args = extra_args or []
+        match: List[RegexMatch] = []
+
+        for token in tokenize(command):
+            if isinstance(token, TextToken):
+                text_list = list(token.choice)
+                if len(text_list) == 1:
+                    match.append(FullMatch(text_list[0]).space(SpacePolicy.FORCE))
+                else:
+                    match.append(UnionMatch(text_list).space(SpacePolicy.FORCE))
+            elif isinstance(token, ParamToken):
+                assert len(token.names) == 1, "Param aliasing is not allowed!"
+                match.append(ParamMatch().space(SpacePolicy.FORCE).param(next(iter(token.names))))
+            else:
+                raise ValueError(f"unexpected token: {token}")
+
+        if match:
+            match[-1].space_policy = SpacePolicy.NOSPACE
+
+        return cls(*match, *extra_args)
+
+    def help(
+        self,
+        usage: str = "",
+        description: str = "",
+        epilog: str = "",
+        dest: bool = True,
+        sep: str = " -> ",
+        formatter_class: Type[HelpFormatter] = HelpFormatter,
+        *,
+        brief: Optional[str] = None,
+        help_id: str = TwilightHelpManager.AUTO_ID,
+        manager: Union[str, TwilightHelpManager] = "global",
+    ) -> Self:
+        """利用 Match 中的信息生成帮助字符串.
+
+        Args:
+            usage (str, optional): 使用方法 (命令格式).
+            description (str, optional): 前导描述. Defaults to "".
+            epilog (str, optional): 后置总结. Defaults to "".
+            dest (bool, optional): 是否显示分派位置. Defaults to True.
+            sep (str, optional): 分派位置之间的分隔符. Defaults to " -> ".
+            formatter_class (Type[HelpFormatter], optional): 帮助格式化器. Defaults to HelpFormatter.
+            help_id (str, optional): 帮助 id. 默认为自动生成 (推荐自行指定).
+            brief (str, optional): 简要介绍, 默认与 description 相同.
+            manager (str, optional): 帮助信息管理器. 默认 "global" (全局管理器).
+
+        Returns:
+            str: 生成的帮助字符串, 被格式化与缩进过了
+        """
+        self.help_data = {
+            "usage": usage,
+            "description": description,
+            "epilog": epilog,
+            "dest": dest,
+            "sep": sep,
+            "formatter_class": formatter_class,
+        }
+        self.help_id = help_id
+        self.help_brief = brief or description
+        help_mgr = TwilightHelpManager.get_help_mgr(manager)
+        help_mgr.register(self)
+        return self
+
+    def get_help(
+        self,
+        usage: str = "",
+        description: str = "",
+        epilog: str = "",
+        dest: bool = True,
+        sep: str = " -> ",
+        formatter_class: Type[HelpFormatter] = HelpFormatter,
+    ) -> str:
+        """利用 Match 中的信息生成帮助字符串.
+
+        Args:
+            usage (str, optional): 使用方法 (命令格式).
+            description (str, optional): 前导描述. Defaults to "".
+            epilog (str, optional): 后置总结. Defaults to "".
+            dest (bool, optional): 是否显示分派位置. Defaults to True.
+            sep (str, optional): 分派位置分隔符. Defaults to " -> ".
+            formatter_class (Type[HelpFormatter], optional): 帮助格式化器. Defaults to HelpFormatter.
+
+        Returns:
+            str: 生成的帮助字符串, 被格式化与缩进过了
+        """
+        if self.help_data:
+            return self.matcher.get_help(**self.help_data)
+        return self.matcher.get_help(usage, description, epilog, dest, sep, formatter_class)
+
+    async def beforeExecution(self, interface: DispatcherInterface):
+        """检验 MessageChain 并将 Sparkle 存入本地存储
+
+        Args:
+            interface (DispatcherInterface): DispatcherInterface, 应该能从中提取 MessageChain
+
+        Raises:
+            ExecutionStop: 匹配以任意方式失败
+        """
+        local_storage = interface.local_storage
+        chain: MessageChain
+        if isinstance(self.preprocessor, ChainDecorator):
+            chain = await interface.lookup_by_directly(
+                DecoratorInterface(), "message_chain", MessageChain, self.preprocessor
+            )
+        elif isinstance(self.preprocessor, AnnotatedType):
+            chain = await interface.lookup_by_directly(
+                DeriveDispatcher(), "twilight_derive", self.preprocessor, None
+            )
+        else:
+            chain = await interface.lookup_param("message_chain", MessageChain, None)
+        with contextlib.suppress(Exception):
+            local_storage[f"{__name__}:result"] = self.generate(chain, local_storage)
+            local_storage[f"{__name__}:twilight"] = self
+            return
+        interface.stop()
+
+    async def catch(self, interface: DispatcherInterface):
+        local_storage = interface.local_storage
+        sparkle: T_Sparkle = local_storage[f"{__name__}:result"]
+        if generic_issubclass(Sparkle, interface.annotation):
             return sparkle
-        if issubclass(interface.annotation, Twilight):
+        if generic_issubclass(Twilight, interface.annotation):
             return self
-        if issubclass(interface.annotation, Match):
-            return sparkle.get_match(interface.name)
+        if interface.name in sparkle.res:
+            result = sparkle.get(interface.name)
+            if generic_isinstance(result.origin, interface.annotation):
+                from loguru import logger
+
+                logger.warning(
+                    f"Please use {interface.name}: {result.__class__.__qualname__} to get origin attribute!"
+                )
+                interface.stop()
+            if generic_issubclass(get_origin(interface.annotation), MatchResult):
+                return result
+            if generic_isinstance(result.result, get_origin(interface.annotation)):
+                return result.result
+
+
+class ResultValue(Decorator, Derive[MessageChain]):
+    """返回 Match 结果值的装饰器"""
+
+    pre = True
+
+    async def __call__(self, _: Any, i: DispatcherInterface) -> Any:
+        sparkle: Sparkle = i.local_storage[f"{__name__}:result"]
+        res = sparkle.res.get(i.name, None)
+        if res is not None:
+            res = res.result
+        if generic_isinstance(res, i.annotation):
+            return res
+        i.stop()
+
+    @staticmethod
+    async def target(i: DecoratorInterface):
+        sparkle: Sparkle = i.local_storage[f"{__name__}:result"]
+        res = sparkle.res.get(i.name, None)
+        if res is not None:
+            res = res.result
+        if generic_isinstance(res, i.annotation):
+            return res
+        i.dispatcher_interface.stop()
+
+
+class Help(Decorator, Generic[T]):
+    """返回帮助信息的装饰器"""
+
+    pre = True
+
+    formatter: Optional[Callable[[str, DecoratorInterface], Union[Awaitable[T], T]]]
+
+    @overload
+    def __init__(self) -> None:
+        """
+        Args:
+            formatter (Callable[[str, DecoratorInterface], Union[Awaitable[T], T]], optional): \
+                帮助信息格式化函数.
+        """
+        ...
+
+    @overload
+    def __init__(self, formatter: Callable[[str, DecoratorInterface], Union[Awaitable[T], T]]) -> None:
+        """
+        Args:
+            formatter (Callable[[str, DecoratorInterface], Union[Awaitable[T], T]], optional): \
+                帮助信息格式化函数.
+        """
+        ...
+
+    def __init__(
+        self, formatter: Optional[Callable[[str, DecoratorInterface], Union[Awaitable[T], T]]] = None
+    ) -> None:
+        """
+        Args:
+            formatter (Optional[Callable[[str, DecoratorInterface], Union[Awaitable[T], T]]], optional): \
+                帮助信息格式化函数.
+        """
+        self.formatter = formatter
+
+    async def target(self, i: DecoratorInterface) -> T:
+        twilight: Twilight = i.local_storage[f"{__name__}:twilight"]
+        help_string: str = twilight.matcher.get_help(**(twilight.help_data or {}))
+        if self.formatter:
+            coro_or_result = self.formatter(help_string, i)
+            if inspect.isawaitable(coro_or_result):
+                return await coro_or_result
+            else:
+                return cast(T, coro_or_result)
+        return cast(T, help_string)

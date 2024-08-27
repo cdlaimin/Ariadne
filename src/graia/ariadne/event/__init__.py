@@ -1,25 +1,19 @@
+"""Ariadne 的事件"""
 from graia.broadcast import Dispatchable
-from pydantic import validator
 
-from ..dispatcher import ApplicationDispatcher
-from ..exception import InvalidEventTypeDefinition
+from ..dispatcher import BaseDispatcher
 from ..model import AriadneBaseModel
 
 
 class MiraiEvent(Dispatchable, AriadneBaseModel):
+    """Ariadne 的事件基类"""
+
     type: str
+    """事件类型"""
 
-    @validator("type", allow_reuse=True)
-    def validate_event_type(cls, v):
-        if not isinstance(cls, type):
-            raise TypeError("cls must be a class!")
-        if cls.type != v:
-            raise InvalidEventTypeDefinition(
-                "{0}'s type must be '{1}', not '{2}'".format(cls.__name__, cls.type, v)
-            )
-        return v
+    Dispatcher = BaseDispatcher
 
-    class Config:
-        extra = "ignore"
 
-    Dispatcher = ApplicationDispatcher
+from . import lifecycle as lifecycle  # noqa: F401, E402
+from . import message as message  # noqa: F401, E402
+from . import mirai as mirai  # noqa: F401, E402

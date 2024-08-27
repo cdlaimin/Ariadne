@@ -1,18 +1,13 @@
-import graia.ariadne.event.lifecycle
-import graia.ariadne.event.message
-import graia.ariadne.event.mirai
-import graia.ariadne.event.network
+"""Ariadne
 
-# init event
+一个优雅的 QQ Bot 框架.
+"""
 
-ARIADNE_ASCII_LOGO = r"""
-                _           _            
-     /\        (_)         | |           
-    /  \   _ __ _  __ _  __| |_ __   ___ 
-   / /\ \ | '__| |/ _` |/ _` | '_ \ / _ \
-  / ____ \| |  | | (_| | (_| | | | |  __/
- /_/    \_\_|  |_|\__,_|\__,_|_| |_|\___|
-""".lstrip(
-    "\n"
-)
-# remove first newline
+from importlib.metadata import Distribution
+
+from .app import Ariadne as Ariadne  # noqa: F401
+
+if next(iter(Distribution.discover(name="graia-application-mirai")), None) is not None:
+    raise ImportError("`graia-application-mirai` is out of support.")
+
+__version__ = "0.11.7"
